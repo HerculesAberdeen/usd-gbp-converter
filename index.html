@@ -7,10 +7,18 @@
     try {
       const response = await fetch("https://api.exchangerate.host/convert?from=USD&to=GBP");
       const data = await response.json();
+      
+      if (!data || !data.result) {
+        console.error("API error: ", data);
+        resultElement.textContent = "Could not fetch conversion rate.";
+        return;
+      }
+
       const rate = data.result;
       const gbp = usd * rate;
       resultElement.textContent = `$${usd} = £${gbp.toFixed(2)} GBP`;
     } catch (error) {
+      console.error("Fetch failed: ", error);
       resultElement.textContent = "Something went wrong. Try again.";
     }
   });
