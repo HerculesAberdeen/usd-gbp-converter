@@ -15,13 +15,37 @@
 
     <p id="result"></p>
 
+    <!-- ⬇️ Script placed correctly at the bottom of body -->
     <script>
-      document.getElementById("converter-form").addEventListener("submit", async function (e) {
-        e.preventDefault();
-        const usd = parseFloat(document.getElementById("usd").value);
+      document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("converter-form");
         const resultElement = document.getElementById("result");
 
-        try {
-          const response = await fetch("h
+        form.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const usd = parseFloat(document.getElementById("usd").value);
+
+          try {
+            const res = await fetch("https://api.exchangerate.host/convert?from=USD&to=GBP");
+            const data = await res.json();
+
+            if (!data || typeof data.result !== "number") {
+              console.error("Invalid API response", data);
+              resultElement.textContent = "Error: Unable to fetch rate.";
+              return;
+            }
+
+            const gbp = usd * data.result;
+            resultElement.textContent = `$${usd} = £${gbp.toFixed(2)} GBP`;
+          } catch (err) {
+            console.error("Conversion failed:", err);
+            resultElement.textContent = "Conversion failed. Try again.";
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
+
 
 
