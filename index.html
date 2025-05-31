@@ -26,25 +26,24 @@
       const usd = parseFloat(document.getElementById("usd").value);
 
       try {
-        const res = await fetch("https://cors-anywhere.herokuapp.com/https://api.exchangerate.host/convert?from=USD&to=GBP");
+        const res = await fetch("/api/convert");
         const data = await res.json();
 
-        console.log("API response:", data);
-
-        if (!data || typeof data.result !== "number") {
+        if (!data || typeof data.rate !== "number") {
           resultElement.textContent = "Error: Unable to fetch rate.";
           return;
         }
 
-        const gbp = usd * data.result;
+        const gbp = usd * data.rate;
         resultElement.textContent = `$${usd} = £${gbp.toFixed(2)} GBP`;
       } catch (err) {
-        console.error("Conversion failed:", err);
         resultElement.textContent = "Conversion failed. Try again.";
+        console.error(err);
       }
     });
   });
 </script>
+
 
 
   </body>
