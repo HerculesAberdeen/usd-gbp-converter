@@ -1,25 +1,52 @@
-export default async function handler(req, res) {
-  const direction = req.query.direction || "usd-to-gbp";
-  let url = "";
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("converter-form");
+  const resultElement = document.getElementById("result");
+  const forecastElement = document.getElementById("forecast-result");
+  const percentChange = document.getElementById("percent-change");
+  const percentLabel = document.getElementById("percent-label");
 
-  if (direction === "usd-to-gbp") {
-    url = "https://api.exchangerate.host/convert?from=USD&to=GBP";
-  } else if (direction === "gbp-to-usd") {
-    url = "https://api.exchangerate.host/convert?from=GBP&to=USD";
-  } else {
-    return res.status(400).json({ error: "Invalid direction." });
-  }
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-  try {
-    const response = await fetch(url);
-    const data = await response.json();
+    const usd = parseFloat(document.getElementById("usd").value);
+    const direction = document.getElementById("direction").value;
 
-    if (!data || typeof data.result !== "number") {
-      return res.status(500).json({ error: "Invalid response from API" });
+    if (isNaN(usd)) {
+      resultElement.textContent = "Please enter a valid amount.";
+      return;
     }
 
-    res.status(200).json({ rate: data.result });
-  } catch (err) {
-    res.status(500).json({ error: "Conversion failed" });
-  }
-}
+    try {
+      const res = await fetch(`/api/convert?direction=${direction}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        resultElement.textContent = `Error: ${data.error}`;
+        return;
+      }
+
+      const converted = direction === "usd-to-gbp"
+        ? usd * data.rate
+        : usd / data.rate;
+
+      resultElement.textContent = `Converted: ${converted.toFixed(2)} ${direction === "usd-to-gbp" ? "GBP" : "USD"}`;
+
+      // Forecast
+      const percent = parseFloat(percentChange.value);
+      const adjustedRate = data.rate * (1 + percent / 100);
+      const forecasted = direction === "usd-to-gbp"
+        ? usd * adjustedRate
+        : usd / adjustedRate;
+
+      forecastElement.textContent = `Forecasted (${percent}%): ${forecasted.toFixed(2)} ${direction === "usd-to-gbp" ? "GBP" : "USD"}`;
+
+    } catch (err) {
+      resultElement.textContent = "Conversion failed. Try again.";
+    }
+  });
+
+  // Update label and forecast dynamically when slider is moved
+  percentChange.addEventListener("input", () => {
+    percentLabel.textContent = `${percentChange.value}%`;
+  });
+});
