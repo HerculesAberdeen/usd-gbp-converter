@@ -1,49 +1,25 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.getElementById("converter-form");
-  const resultElement = document.getElementById("result");
-  const forecastResult = document.getElementById("forecast-result");
-  const percentInput = document.getElementById("percent-change");
-  const percentLabel = document.getElementById("percent-label");
-  const directionSelect = document.getElementById("direction");
+export default async function handler(req, res) {
+  const direction = req.query.direction || "usd-to-gbp";
+  let url = "";
 
-  form.addEventListener("submit", async function (e) {
-    e.preventDefault();
+  if (direction === "usd-to-gbp") {
+    url = "https://api.exchangerate.host/convert?from=USD&to=GBP";
+  } else if (direction === "gbp-to-usd") {
+    url = "https://api.exchangerate.host/convert?from=GBP&to=USD";
+  } else {
+    return res.status(400).json({ error: "Invalid direction." });
+  }
 
-    const amount = parseFloat(document.getElementById("usd").value);
-    const direction = directionSelect.value;
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
 
-    if (isNaN(amount)) {
-      resultElement.textContent = "Please enter a valid number.";
-      return;
+    if (!data || typeof data.result !== "number") {
+      return res.status(500).json({ error: "Invalid response from API" });
     }
 
-    try {
-      const response = await fetch("/api/convert?direction=" + direction);
-      const data = await response.json();
-
-      if (!data || typeof data.rate !== "number") {
-        resultElement.textContent = "Conversion failed. Try again.";
-        return;
-      }
-
-      const rate = data.rate;
-      const converted = direction === "usd-to-gbp" 
-        ? amount * rate 
-        : amount / rate;
-
-      resultElement.textContent = `Converted amount: ${converted.toFixed(2)}`;
-
-      // Forecast
-      const percent = parseFloat(percentInput.value);
-      const multiplier = 1 + percent / 100;
-      const forecasted = converted * multiplier;
-      forecastResult.textContent = `Forecasted (with ${percent}% change): ${forecasted.toFixed(2)}`;
-    } catch (err) {
-      resultElement.textContent = "Error: Unable to fetch rate.";
-    }
-  });
-
-  percentInput.addEventListener("input", () => {
-    percentLabel.textContent = `${percentInput.value}%`;
-  });
-});
+    res.status(200).json({ rate: data.result });
+  } catch (err) {
+    res.status(500).json({ error: "Conversion failed" });
+  }
+}
