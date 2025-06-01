@@ -1,15 +1,49 @@
-export default async function handler(req, res) {
-  try {
-    const response = await fetch("https://v6.exchangerate-api.com/v6/020e367bd9af9e9325e55dea/latest/USD");
-    const data = await response.json();
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("converter-form");
+  const resultElement = document.getElementById("result");
+  const forecastResult = document.getElementById("forecast-result");
+  const percentInput = document.getElementById("percent-change");
+  const percentLabel = document.getElementById("percent-label");
+  const directionSelect = document.getElementById("direction");
 
-    if (!data || typeof data.conversion_rates?.GBP !== "number") {
-      return res.status(500).json({ error: "Invalid API response." });
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const amount = parseFloat(document.getElementById("usd").value);
+    const direction = directionSelect.value;
+
+    if (isNaN(amount)) {
+      resultElement.textContent = "Please enter a valid number.";
+      return;
     }
 
-    res.status(200).json({ rate: data.conversion_rates.GBP });
-  } catch (err) {
-    res.status(500).json({ error: "Conversion failed. Try again." });
-  }
-}
+    try {
+      const response = await fetch("/api/convert?direction=" + direction);
+      const data = await response.json();
 
+      if (!data || typeof data.rate !== "number") {
+        resultElement.textContent = "Conversion failed. Try again.";
+        return;
+      }
+
+      const rate = data.rate;
+      const converted = direction === "usd-to-gbp" 
+        ? amount * rate 
+        : amount / rate;
+
+      resultElement.textContent = `Converted amount: ${converted.toFixed(2)}`;
+
+      // Forecast
+      const percent = parseFloat(percentInput.value);
+      const multiplier = 1 + percent / 100;
+      const forecasted = converted * multiplier;
+      forecastResult.textContent = `Forecasted (with ${percent}% change): ${forecasted.toFixed(2)}`;
+    } catch (err) {
+      resultElement.textContent = "Error: Unable to fetch rate.";
+    }
+  });
+
+  percentInput.addEventListener("input", () => {
+    percentLabel.textContent = `${percentInput.value}%`;
+  });
+});
